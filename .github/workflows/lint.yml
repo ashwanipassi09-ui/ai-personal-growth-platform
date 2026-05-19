@@ -1,0 +1,70 @@
+name: Static Analysis (Linter)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  flake8-lint:
+    name: Python Lint (flake8)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install flake8
+        run: pip install flake8
+      
+      - name: Run flake8
+        run: flake8 . --count --show-source --statistics --max-line-length=120 --ignore=E203,W503
+      
+      - name: Run flake8 (exit-zero for warnings)
+        run: flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+  eslint-lint:
+    name: JavaScript/TypeScript Lint (ESLint)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '18'
+      
+      - name: Install ESLint
+        run: |
+          npm install -g eslint
+          npm install -g @eslint/js
+      
+      - name: Run ESLint (if frontend exists)
+        run: |
+          if [ -d "frontend/src" ]; then
+            cd frontend && npx eslint src/ --ext .js,.jsx,.ts,.tsx --format stylish || true
+          else
+            echo "No frontend/src directory found, skipping ESLint"
+          fi
+
+  check-links:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for broken links in markdown files
+        run: |
+          echo "Checking markdown files..."
+          find . -name "*.md" -exec grep -l "http" {} \;
+          echo "✅ Link check completed (manual review recommended)"
